@@ -11,9 +11,11 @@ __all__ = [
     "BTLx",
     "BTLxProcess",
     "BTLxJackCut",
+    "BTLxLap",
     "BTLxFrenchRidgeLap",
     "LButtFactory",
     "TButtFactory",
+    "THalfLapFactory",
     "LMiterFactory",
     "FrenchRidgeFactory",
 ]
