@@ -68,8 +68,14 @@ class THalfLapJoint(LapJoint):
         extension_tolerance = 0.01  # TODO: this should be proportional to the unit used
         self.main_beam.add_blank_extension(start_main + extension_tolerance, end_main + extension_tolerance, self.key)
 
-        self.main_beam.add_features(MillVolume(negative_brep_main_beam))
-        self.cross_beam.add_features(MillVolume(negative_brep_cross_beam))
+        main_beam_mill = MillVolume(negative_brep_main_beam)
+        cross_beam_mill = MillVolume(negative_brep_cross_beam)
+        main_beam_mill.name = "Main Lap"
+        cross_beam_mill.name = "Cross Lap"
+
+        self.main_beam.add_features(main_beam_mill)
+        self.cross_beam.add_features(cross_beam_mill)
+        self.features.extend([main_beam_mill, cross_beam_mill])
 
         trim_frame = Frame(main_cutting_frame.point, main_cutting_frame.xaxis, -main_cutting_frame.yaxis)
         f_main = CutFeature(trim_frame)

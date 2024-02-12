@@ -26,15 +26,15 @@ class BTLxLap(object):
 
     PROCESS_TYPE = "Lap"
 
-    def __init__(self, part, joint_name=None):
+    def __init__(self, part, joint_name=None, process_params=None):
         self.part = part
         self.apply_process = True
-        self.reference_surface = self.part.reference_surface_planes(1)
-        self.generate_process()
+        self.reference_surface = self.part.reference_surface_planes(2)
+        self.generate_process(process_params)
         if joint_name:
             self.name = joint_name
         else:
-            self.name = "jack cut"
+            self.name = "Lap Joint"
 
     @property
     def header_attributes(self):
@@ -44,7 +44,7 @@ class BTLxLap(object):
             "Process": "yes",
             "Priority": "0",
             "ProcessID": "0",
-            "ReferencePlaneID": "1",
+            "ReferencePlaneID": self.reference_id,
         }
 
     @property
@@ -77,23 +77,25 @@ class BTLxLap(object):
         else:
             return None
 
-    def generate_process(self):
+    def generate_process(self, process_params=None):
         """This is an internal method to generate process parameters"""
-        self.orientation = "start"
-        self.startX = 0.0
-        self.startY = 0.0
-        self.angle = 90.0
-        self.inclination = 90.0
-        self.slope = 0.0
-        self.length = 200.0
-        self.width = 50.0
-        self.depth = 40.0
+        self.orientation = process_params["Orientation"]
+        self.startX = float(process_params["startX"])
+        self.startY = float(process_params["startY"])
+        self.angle = float(process_params["Angle"])
+        self.inclination = float(process_params["Inclination"])
+        self.slope = float(process_params["Slope"])
+        self.length = float(process_params["Length"])
+        self.width = float(process_params["Width"])
+        self.depth = float(process_params["Depth"])
         self.lead_angle_parallel = "yes"
         self.lead_angle = 90.0
         self.lead_inclination_parallel = "yes"
         self.lead_inclination = 90.0
 
+        self.reference_id = process_params["ReferencePlaneID"]
+
     @classmethod
-    def create_process(cls, part, frame, joint_name=None):
-        lap_process = BTLxLap(part, frame, joint_name)
+    def create_process(cls, part, joint, process_params=None):
+        lap_process = BTLxLap(part, joint, process_params=process_params)
         return BTLxProcess(BTLxLap.PROCESS_TYPE, lap_process.header_attributes, lap_process.process_params)
