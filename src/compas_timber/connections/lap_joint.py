@@ -54,6 +54,7 @@ class LapJoint(Joint):
         self.main_beam_key = main_beam.key if main_beam else None
         self.cross_beam_key = cross_beam.key if cross_beam else None
         self.features = []
+        self.lap_plane = None
 
     @property
     def __data__(self):
@@ -140,7 +141,7 @@ class LapJoint(Joint):
         angles_faces = beam_side_incidence(self.beams[1], self.beams[0])
         cfr = max(angles_faces, key=lambda x: x[0])[1]
         return cfr
-    
+
     def _create_negative_volumes(self):
         # Get Cut Plane
         plane_cut_vector = self.beams[0].centerline.vector.cross(self.beams[1].centerline.vector)

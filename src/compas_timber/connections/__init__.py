@@ -8,13 +8,16 @@ from .solver import ConnectionSolver
 from .solver import JointTopology
 from .solver import find_neighboring_beams
 from .t_butt import TButtJoint
+from .lap_joint import LapJoint
 from .t_halflap import THalfLapJoint
 from .x_halflap import XHalfLapJoint
+
 
 __all__ = [
     "Joint",
     "beam_side_incidence",
     "BeamJoinningError",
+    "LapJoint",
     "TButtJoint",
     "THalfLapJoint",
     "LButtJoint",
