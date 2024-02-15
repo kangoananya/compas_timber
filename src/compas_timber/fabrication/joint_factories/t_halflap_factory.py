@@ -6,19 +6,16 @@ from compas_timber.fabrication import BTLxJackCut
 import math
 
 from compas.geometry import Frame
-from compas.geometry import Vector
-from compas.geometry import angle_vectors_signed
 from compas.geometry import cross_vectors
+from compas.geometry import Vector
+from compas.geometry import angle_vectors_signed, angle_vectors
 from compas.geometry import dot_vectors
 from compas.geometry import distance_point_point_sqrd
-from compas.geometry import is_coplanar
+from compas.geometry import is_point_in_polyhedron
 
 
-class THalfLapFactory(object):
+class THalfLapFactory:
     """Factory class for creating T-Butt joints."""
-
-    def __init__(self):
-        pass
 
     @classmethod
     def apply_processings(cls, joint, parts):
@@ -37,10 +34,9 @@ class THalfLapFactory(object):
         None
 
         """
-
         main, cross = parts[str(joint.main_beam.key)], parts[str(joint.cross_beam.key)]
-        main_params, cross_params = THalfLapFactory.create_lap_parameters(main, cross, joint)
-        main.processings.append(BTLxJackCut.create_process(main, THalfLapFactory._get_main_cutting_frame(joint)))
+        main_params, cross_params = cls.create_lap_parameters(main, cross, joint)
+        main.processings.append(BTLxJackCut.create_process(main, cls._get_main_cutting_frame(joint)))
         main.processings.append(BTLxLap.create_process(main, joint.name, main_params))
         cross.processings.append(BTLxLap.create_process(cross, joint.name, cross_params))
 
@@ -59,8 +55,6 @@ class THalfLapFactory(object):
         cut_frame : compas.geometry.Frame
             The frame of the lap joint on the main beam.
         """
-        main_reference_plane = main.reference_surface_planes(2)
-
         features = joint.features
         for feature in features:
             if feature.name == "Main Lap":
@@ -69,13 +63,11 @@ class THalfLapFactory(object):
         a, b, c, d = [mill_feature.volume.vertices[i] for i in [1, 7, 5, 3]]
         e, f, g, h = [mill_feature.volume.vertices[i] for i in [0, 2, 4, 6]]
 
-        face_orientation = cross_vectors((d - a), (b - a))
+        _sum_pt = (a+b+c+d)
+        _check_vector = Vector(*cross_vectors((b - a), (d - a))).unitized()
+        _check_pt = Vector(_sum_pt.x/4.0, _sum_pt.y/4.0, _sum_pt.z/4.0) + _check_vector
 
-        if (
-            dot_vectors(main_reference_plane.zaxis, face_orientation) > 0
-            and joint.ends[str(cross.key)] == "start"
-            and joint.ends[str(main.key)] == "start"
-        ):
+        if is_point_in_polyhedron(_check_pt, cross.beam.blank.to_vertices_and_faces()):
             lap_plane = Frame(a, d - a, b - a)
             cut_face = a, b, c, d
         else:
@@ -104,8 +96,7 @@ class THalfLapFactory(object):
                 return feature.cutting_plane
 
     @staticmethod
-    def _get_beams_angle(main_reference_plane, cross_reference_plane
-                         ):
+    def _get_beams_angle(main_reference_plane, cross_reference_plane):
         """
         Get the angle between the main and cross beams.
 
@@ -128,7 +119,7 @@ class THalfLapFactory(object):
             angle_beams = abs(angle_beams)
             _ref_edge = True
         else:
-            angle_beams =  math.pi - angle_beams
+            angle_beams = math.pi - angle_beams
             _ref_edge = False
         return angle_beams, _ref_edge
 
@@ -147,22 +138,29 @@ class THalfLapFactory(object):
         cross_reference_plane = cross.reference_surface_planes(reference_id_cross)
 
         lap_plane, _cut_face = THalfLapFactory._get_main_lap_plane(main, cross, joint)
-        angle_beams, _ref_edge = THalfLapFactory._get_beams_angle(main_reference_plane, cross_reference_plane)
+        angle_beams, _ = THalfLapFactory._get_beams_angle(main_reference_plane, cross_reference_plane)
 
-        lap_slope = math.degrees(
-            angle_vectors_signed(main_reference_plane.yaxis, lap_plane.yaxis, main_reference_plane.normal)
-        )
-        lap_inclination = math.degrees(
-            angle_vectors_signed(main_reference_plane.xaxis, lap_plane.xaxis, main_reference_plane.normal)
+        lap_slope = math.degrees(angle_vectors_signed(main_reference_plane.yaxis, lap_plane.yaxis, lap_plane.xaxis))
+        lap_inclination = (
+            angle_vectors_signed(lap_plane.zaxis,main_reference_plane.zaxis, lap_plane.yaxis)
         )
 
+        print("Lap Slope: ", lap_slope)
+        print("Lap Inclination: ", lap_inclination)
+
+        lap_slope_cross = math.degrees(
+            angle_vectors_signed(cross_reference_plane.yaxis, lap_plane.yaxis, lap_plane.xaxis)
+        )
+        lap_inclination_cross = math.degrees(
+            angle_vectors_signed(cross_reference_plane.zaxis, lap_plane.zaxis, lap_plane.yaxis)
+        )
+
+        print("Lap Slope: ", 180 - lap_slope_cross)
+        print("Lap Inclination: ", 90 - lap_inclination_cross)
         _diagonal_length = beam.width / abs(math.tan(angle_beams))
 
         if joint.ends[str(main.key)] == "end":
-            if _ref_edge:
-                startX_main = beam.blank_length - _diagonal_length
-            else:
-                startX_main = beam.blank_length + _diagonal_length
+            startX_main = beam.blank_length - _diagonal_length
         else:
             startX_main = _diagonal_length if angle_beams < math.pi / 2 else 0
 
