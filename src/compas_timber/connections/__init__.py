@@ -1,7 +1,6 @@
 from .french_ridge_lap import FrenchRidgeLapJoint
 from .joint import BeamJoinningError
 from .joint import Joint
-from .joint import beam_side_incidence
 from .l_butt import LButtJoint
 from .l_miter import LMiterJoint
 from .solver import ConnectionSolver
